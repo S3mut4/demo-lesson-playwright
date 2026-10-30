@@ -11,6 +11,17 @@ test('signIn button disabled when incorrect data inserted', async ({ page }) => 
   await expect(loginPage.signInButton).toBeDisabled()
 })
 
+test('signIn with invalid credentials should lead to error', async ({ page }) => {
+  const loginPage = new LoginPage(page)
+  await loginPage.open()
+  await loginPage.usernameField.fill(faker.lorem.word(2))
+  await loginPage.passwordField.fill(faker.lorem.word(9))
+
+  await loginPage.signInButton.click()
+
+  await expect(loginPage.authError).toBeVisible()
+})
+
 test('login with correct credentials and verify order creation page', async ({ page }) => {
   const loginPage = new LoginPage(page)
   await loginPage.open()
