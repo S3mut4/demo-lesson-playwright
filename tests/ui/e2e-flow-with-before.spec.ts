@@ -23,9 +23,19 @@ test('error message displayed when incorrect credentials used', async ({}) => {
 test('login with correct credentials and verify order creation page', async ({}) => {
   const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
   await expect(orderCreationPage.statusButton).toBeVisible()
-  // verify at least few elements on the order creation page
+  await expect(orderCreationPage.usernameInput).toBeVisible()
+  await expect(orderCreationPage.phoneInput).toBeVisible()
+  await expect(orderCreationPage.commentInput).toBeVisible()
+  await expect(orderCreationPage.createOrderButton).toBeVisible()
 })
 
-test('login and create order', async ({}) => {
-  // implement test
+test.only('login and create order', async ({}) => {
+  const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
+  // let's create an order
+  await orderCreationPage.usernameInput.fill('random-user')
+  await orderCreationPage.phoneInput.fill('55665544')
+  await orderCreationPage.commentInput.fill('leave near the door')
+  await orderCreationPage.createOrderButton.click()
+  // now verify success message
+  await expect(orderCreationPage.successMessage).toBeVisible()
 })
