@@ -130,3 +130,57 @@ test('order mock server side error', async ({}) => {
     'Please retry your request later',
   )
 })
+
+test('order mock server side error with empty body', async ({}) => {
+  const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
+  // NB !!! init mock before flow started
+  await serverErrorOrderMock(orderCreationPage.page)
+  // search for order
+  await orderCreationPage.statusButton.click()
+  await orderCreationPage.searchOrderInput.fill('010') // any value works, the response is mocked
+  const responsePromise = orderCreationPage.page.waitForResponse('**/orders/*')
+  await orderCreationPage.searchOrderButton.click()
+  // checks: the response really comes from the mock
+  const response = await responsePromise
+  expect(response.status()).toBe(500)
+  expect(await response.text()).toBe('')
+  // checks: generic error shown, nothing else
+  await expect(orderCreationPage.serverErrorDescription).toHaveText(
+    'Please retry your request later',
+  )
+  await expect(orderCreationPage.orderNotFoundText).toBeHidden()
+  await expect(orderCreationPage.orderNameDetails).toBeHidden()
+})
+
+test('order mock server side error does not leak internal details', async ({}) => {
+  const leakedDetails = [
+    'ORA-00942: table or view does not exist',
+    'at OrderService.findById (/app/src/order-service.ts:42)',
+    '/internal/db/orders',
+  ]
+  const leakyErrorBody = JSON.stringify({
+    error: leakedDetails[0],
+    stack: leakedDetails[1],
+    path: leakedDetails[2],
+  })
+
+  const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
+  // NB !!! init mock before flow started
+  await serverErrorOrderMock(orderCreationPage.page, leakyErrorBody)
+  // search for order
+  await orderCreationPage.statusButton.click()
+  await orderCreationPage.searchOrderInput.fill('010') // any value works, the response is mocked
+  const responsePromise = orderCreationPage.page.waitForResponse('**/orders/*')
+  await orderCreationPage.searchOrderButton.click()
+  // checks: the response really comes from the mock
+  const response = await responsePromise
+  expect(response.status()).toBe(500)
+  // checks: generic error shown
+  await expect(orderCreationPage.serverErrorDescription).toHaveText(
+    'Please retry your request later',
+  )
+  // checks: no internal details rendered anywhere on the page
+  for (const detail of leakedDetails) {
+    await expect(orderCreationPage.page.locator('body')).not.toContainText(detail)
+  }
+})
