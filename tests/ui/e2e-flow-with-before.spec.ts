@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test'
 import { LoginPage } from '../pages/login-page'
 import { faker } from '@faker-js/faker/locale/en'
-import { PASSWORD, SERVICE_URL, USERNAME } from '../../config/env-data'
+import { PASSWORD, USERNAME } from '../../config/env-data'
 
 let loginPage: LoginPage
 
@@ -56,7 +56,7 @@ test('check errors on order creation', async ({}) => {
   await expect(orderCreationPage.customerNameError).toBeVisible()
 })
 
-test('logout from order page', async ({}) => {
+test.only('logout from order page', async ({}) => {
   const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
   await orderCreationPage.logoutButton.click()
   //Check
@@ -66,7 +66,7 @@ test('logout from order page', async ({}) => {
   // Not good: expect(loginPage.url).toContain('signin')
   // We have iun login-page --> readonly url: string = SERVICE_URL
   // console.log(loginPage.page.url())
-  await expect(loginPage.page.url()).toContain('signin')
+  expect(loginPage.page.url()).toContain('signin')
 })
 
 test('order not found page', async ({}) => {
