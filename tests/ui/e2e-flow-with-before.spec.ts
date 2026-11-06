@@ -56,7 +56,7 @@ test('check errors on order creation', async ({}) => {
   await expect(orderCreationPage.customerNameError).toBeVisible()
 })
 
-test.only('logout from order page', async ({}) => {
+test('logout from order page', async ({}) => {
   const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
   await orderCreationPage.logoutButton.click()
   //Check
