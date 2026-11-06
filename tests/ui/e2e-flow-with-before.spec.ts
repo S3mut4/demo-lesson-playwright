@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test'
 import { LoginPage } from '../pages/login-page'
 import { faker } from '@faker-js/faker/locale/en'
 import { PASSWORD, USERNAME } from '../../config/env-data'
+import { existingOrderMock, nonExistingOrderMock, serverErrorOrderMock } from '../mock/order-mocks'
 
 let loginPage: LoginPage
 
@@ -91,4 +92,49 @@ test('order found page', async ({}) => {
   //Check
   await expect(orderCreationPage.orderStatusOpen).toBeVisible()
   await expect(orderCreationPage.orderNameDetails).toBeVisible()
+})
+
+test('order mock found page', async ({}) => {
+  const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
+  // NB !!! init mock before flow started
+  await existingOrderMock(orderCreationPage.page)
+  // search for order
+  await orderCreationPage.statusButton.click()
+  // fill order number
+  await orderCreationPage.searchOrderInput.fill('0') // As it's mock value doesn't matter
+  await orderCreationPage.searchOrderButton.click()
+
+  // checks
+  await expect(orderCreationPage.orderStatusOpen).toBeVisible()
+  await expect(orderCreationPage.orderNameDetails).toBeVisible()
+})
+
+test('order mock not found page', async ({}) => {
+  const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
+  // NB !!! init mock before flow started
+  await nonExistingOrderMock(orderCreationPage.page)
+  // search for order
+  await orderCreationPage.statusButton.click()
+  //fill order
+  await orderCreationPage.searchOrderInput.fill('25000') // As it's mock value doesn't matter
+  await orderCreationPage.searchOrderButton.click()
+  //Check
+  await expect(orderCreationPage.orderNotFoundText).toBeVisible()
+  await expect(orderCreationPage.orderNotFoundImage).toBeVisible()
+  //await expect(orderCreationPage.serverErrorDescription).toBeVisible()
+  //await expect(orderCreationPage.serverErrorDescription).toHaveText('Please retry your request later')
+})
+
+test.only('order mock server side error', async ({}) => {
+  const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
+  // NB !!! init mock before flow started
+  await serverErrorOrderMock(orderCreationPage.page)
+  // search for order
+  await orderCreationPage.statusButton.click()
+  //fill order
+  await orderCreationPage.searchOrderInput.fill('010') // As it's mock value doesn't matter
+  await orderCreationPage.searchOrderButton.click()
+  //Check
+  await expect(orderCreationPage.serverErrorDescription).toBeVisible()
+  await expect(orderCreationPage.serverErrorDescription).toHaveText('Please retry your request later')
 })
