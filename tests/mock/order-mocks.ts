@@ -1,6 +1,6 @@
 import { Page } from '@playwright/test'
 
-export async function existingOrderMock(page: Page) {
+export async function existingOrderMock(page: Page): Promise<void> {
   const order = {
     status: 'OPEN',
     courierId: null,
@@ -17,16 +17,20 @@ export async function existingOrderMock(page: Page) {
   })
 }
 
-export async function nonExistingOrderMock(page: Page) {
+export async function nonExistingOrderMock(page: Page): Promise<void> {
   await page.route('**/orders/*', async (route) => {
     await route.fulfill({})
   })
 }
 
-export async function serverErrorOrderMock(page: Page) {
+export async function serverErrorOrderMock(page: Page, body = ''): Promise<void> {
   await page.route('**/orders/*', async (route) => {
+    if (route.request().method() !== 'GET') {
+      return route.fallback()
+    }
     await route.fulfill({
       status: 500,
+      body,
     })
   })
 }
