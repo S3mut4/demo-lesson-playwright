@@ -115,6 +115,50 @@ The workflow runs, in order:
 - typescript-eslint updated 8.14 → 8.72.
 - `npm audit` still reports 6 moderate vulnerabilities: a single `minimatch` issue inherited through typescript-eslint. Waiting for an upstream fix. Do not run `npm audit fix --force` (it downgrades typescript-eslint to 6.x, which does not support TypeScript 5.6).
 
-### Known issues
+## Lesson 18 — Mocks with Playwright
 
-- The `serverError-description` check is commented out: the server returned "Please retry your request later" for about an hour, so the check could not be validated reliably.
+### What a mock does
+
+A mock intercepts the requests the browser sends to the backend and returns a predefined response. The page and the UI are real; only the server response is simulated. This makes it possible to test how the frontend reacts to responses that are hard or impossible to reproduce on demand (an existing order, a missing order, a server error).
+
+Mocks are defined in `tests/mock/order-mocks.ts`:
+
+| Mock                   | Simulated response                                                      | Used for               |
+|------------------------|-------------------------------------------------------------------------|------------------------|
+| `existingOrderMock`    | `200` with an order (`status: OPEN`, `customerName: Mark`, `id: 23999`) | Order details page     |
+| `nonExistingOrderMock` | `200` with an empty body                                                | "Order not found" page |
+| `serverErrorOrderMock` | `500` with no body                                                      | Server error message   |
+
+All three intercept `**/orders/*`, so any order number typed in the search returns the mocked response.
+
+### How to use a mock
+
+The mock must be registered **before** the action that sends the request:
+
+```typescript
+const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
+await existingOrderMock(orderCreationPage.page) // register the mock first
+await orderCreationPage.statusButton.click()
+await orderCreationPage.searchOrderInput.fill('0') // any value works, the response is mocked
+await orderCreationPage.searchOrderButton.click()
+```
+
+A mock is active only for the `page` it is registered on, so it does not affect other tests.
+
+### Tests
+
+Added to `tests/ui/e2e-flow-with-before.spec.ts`:
+
+| Test                         | Mock                   | Expected result                                  |
+|------------------------------|------------------------|--------------------------------------------------|
+| order mock found page        | `existingOrderMock`    | Status OPEN shown, customer name contains "Mark" |
+| order mock not found page    | `nonExistingOrderMock` | "Not found" text and image displayed             |
+| order mock server side error | `serverErrorOrderMock` | "Please retry your request later" displayed      |
+
+### Real data vs mocks
+
+`order found page` and `order not found page` run against real data: they pass only while order `20616` exists and `25000` does not. They are kept as integration checks, but they can fail if the shared data changes. The mocked versions are deterministic and do not depend on the server state.
+
+### Security note
+
+A mock only changes what your own browser receives; the server is not affected. Faking a response (for example a login token) gives no real access if the server validates every request. If a site grants access based only on what the frontend receives, that is a vulnerability in the site (broken access control), not a feature of mocking.

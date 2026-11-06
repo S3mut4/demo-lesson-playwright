@@ -35,24 +35,23 @@ test('login with correct credentials and verify order creation page', async ({})
 
 test('login and create order', async ({}) => {
   const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
-  // let's create an order
+  // create an order
   await orderCreationPage.usernameInput.fill('random-user')
   await orderCreationPage.phoneInput.fill('55665544')
   await orderCreationPage.commentInput.fill('leave near the door')
   await orderCreationPage.createOrderButton.click()
-  // now verify success message
+  // verify success message
   await expect(orderCreationPage.successMessage).toBeVisible()
 })
 
 test('check errors on order creation', async ({}) => {
   const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
-  // let's create an order
+  // fill the form with invalid data
   await orderCreationPage.usernameInput.fill('a')
   await orderCreationPage.phoneInput.fill('12345')
   await orderCreationPage.commentInput.fill('leave near the door')
-  //Check
+  // checks
   await expect(orderCreationPage.createOrderButton).toBeDisabled()
-  // now verify errors messages
   await expect(orderCreationPage.phoneError).toBeVisible()
   await expect(orderCreationPage.customerNameError).toBeVisible()
 })
@@ -60,36 +59,30 @@ test('check errors on order creation', async ({}) => {
 test('logout from order page', async ({}) => {
   const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
   await orderCreationPage.logoutButton.click()
-  //Check
+  // checks
   await expect(loginPage.signInButton).toBeVisible()
   await expect(orderCreationPage.logoutButton).toBeHidden()
-  // URL
-  // Not good: expect(loginPage.url).toContain('signin')
-  // We have iun login-page --> readonly url: string = SERVICE_URL
-  // console.log(loginPage.page.url())
-  expect(loginPage.page.url()).toContain('signin')
+  await expect(loginPage.page).toHaveURL(/signin/)
 })
 
 test('order not found page', async ({}) => {
   const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
   await orderCreationPage.statusButton.click()
-  //fill order
+  // fill order number
   await orderCreationPage.searchOrderInput.fill('25000')
   await orderCreationPage.searchOrderButton.click()
-  //Check
+  // checks
   await expect(orderCreationPage.orderNotFoundText).toBeVisible()
   await expect(orderCreationPage.orderNotFoundImage).toBeVisible()
-  //await expect(orderCreationPage.serverErrorDescription).toBeVisible()
-  //await expect(orderCreationPage.serverErrorDescription).toHaveText('Please retry your request later')
 })
 
 test('order found page', async ({}) => {
   const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
   await orderCreationPage.statusButton.click()
-  //fill order
+  // fill order number
   await orderCreationPage.searchOrderInput.fill('20616')
   await orderCreationPage.searchOrderButton.click()
-  //Check
+  // checks
   await expect(orderCreationPage.orderStatusOpen).toBeVisible()
   await expect(orderCreationPage.orderNameDetails).toBeVisible()
 })
@@ -101,12 +94,11 @@ test('order mock found page', async ({}) => {
   // search for order
   await orderCreationPage.statusButton.click()
   // fill order number
-  await orderCreationPage.searchOrderInput.fill('0') // As it's mock value doesn't matter
+  await orderCreationPage.searchOrderInput.fill('0') // any value works, the response is mocked
   await orderCreationPage.searchOrderButton.click()
-
   // checks
   await expect(orderCreationPage.orderStatusOpen).toBeVisible()
-  await expect(orderCreationPage.orderNameDetails).toBeVisible()
+  await expect(orderCreationPage.orderNameDetails).toContainText('Mark')
 })
 
 test('order mock not found page', async ({}) => {
@@ -115,26 +107,26 @@ test('order mock not found page', async ({}) => {
   await nonExistingOrderMock(orderCreationPage.page)
   // search for order
   await orderCreationPage.statusButton.click()
-  //fill order
-  await orderCreationPage.searchOrderInput.fill('25000') // As it's mock value doesn't matter
+  // fill order number
+  await orderCreationPage.searchOrderInput.fill('25000') // any value works, the response is mocked
   await orderCreationPage.searchOrderButton.click()
-  //Check
+  // checks
   await expect(orderCreationPage.orderNotFoundText).toBeVisible()
   await expect(orderCreationPage.orderNotFoundImage).toBeVisible()
-  //await expect(orderCreationPage.serverErrorDescription).toBeVisible()
-  //await expect(orderCreationPage.serverErrorDescription).toHaveText('Please retry your request later')
 })
 
-test.only('order mock server side error', async ({}) => {
+test('order mock server side error', async ({}) => {
   const orderCreationPage = await loginPage.signIn(USERNAME, PASSWORD)
   // NB !!! init mock before flow started
   await serverErrorOrderMock(orderCreationPage.page)
   // search for order
   await orderCreationPage.statusButton.click()
-  //fill order
-  await orderCreationPage.searchOrderInput.fill('010') // As it's mock value doesn't matter
+  // fill order number
+  await orderCreationPage.searchOrderInput.fill('010') // any value works, the response is mocked
   await orderCreationPage.searchOrderButton.click()
-  //Check
+  // checks
   await expect(orderCreationPage.serverErrorDescription).toBeVisible()
-  await expect(orderCreationPage.serverErrorDescription).toHaveText('Please retry your request later')
+  await expect(orderCreationPage.serverErrorDescription).toHaveText(
+    'Please retry your request later',
+  )
 })

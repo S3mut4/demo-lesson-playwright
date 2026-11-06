@@ -18,10 +18,8 @@ export async function existingOrderMock(page: Page) {
 }
 
 export async function nonExistingOrderMock(page: Page) {
-
   await page.route('**/orders/*', async (route) => {
-    await route.fulfill({
-    })
+    await route.fulfill({})
   })
 }
 
